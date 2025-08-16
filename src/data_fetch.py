@@ -12,5 +12,10 @@ def fetch_stock_data(ticker, start_date, end_date):
     stock.to_csv(f"data/{ticker}_data.csv")
     print(f"Data saved to data/{ticker}_data.csv")
 
-if __name__ == '__main__':
-    fetch_stock_data('AAPL', '2023-01-01', '2024-01-01')
+'''if __name__ == '__main__':
+    fetch_stock_data('AAPL', '2023-01-01', '2024-01-01')'''
+
+#choose relevent data to download from yf (data pre-processing)
+#train model with clean, relevent data
+#create main.py file to run everything
+#test and inprove the model
