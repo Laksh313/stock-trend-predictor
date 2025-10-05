@@ -1,0 +1,113 @@
+[
+  {
+    "config": {
+      "name": "Tech_LightGBM_30feat",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA",
+        "TSLA",
+        "META",
+        "AMD"
+      ],
+      "model": "lightgbm",
+      "max_features": 30,
+      "start": "2019-01-01"
+    },
+    "cv_accuracy": null,
+    "test_accuracy": null,
+    "success": true
+  },
+  {
+    "config": {
+      "name": "Tech_LightGBM_40feat",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA",
+        "TSLA",
+        "META",
+        "AMD"
+      ],
+      "model": "lightgbm",
+      "max_features": 40,
+      "start": "2019-01-01"
+    },
+    "cv_accuracy": null,
+    "test_accuracy": null,
+    "success": true
+  },
+  {
+    "config": {
+      "name": "Diverse_LightGBM_30feat",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "JPM",
+        "XOM",
+        "JNJ",
+        "WMT",
+        "DIS",
+        "BA",
+        "PG",
+        "KO"
+      ],
+      "model": "lightgbm",
+      "max_features": 30,
+      "start": "2019-01-01"
+    },
+    "cv_accuracy": null,
+    "test_accuracy": null,
+    "success": true
+  },
+  {
+    "config": {
+      "name": "Tech_Stacker_30feat",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA",
+        "TSLA",
+        "META",
+        "AMD"
+      ],
+      "model": "stacker",
+      "max_features": 30,
+      "start": "2019-01-01"
+    },
+    "cv_accuracy": null,
+    "test_accuracy": null,
+    "success": true
+  },
+  {
+    "config": {
+      "name": "Large_LightGBM_35feat",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "META",
+        "NVDA",
+        "TSLA",
+        "AMD",
+        "JPM",
+        "BAC",
+        "XOM",
+        "JNJ"
+      ],
+      "model": "lightgbm",
+      "max_features": 35,
+      "start": "2018-01-01"
+    },
+    "cv_accuracy": null,
+    "test_accuracy": null,
+    "success": true
+  }
+]
