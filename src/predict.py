@@ -7,10 +7,10 @@ import numpy as np
 from feature_engineering import FeatureEngineer
 from tensorflow.keras.models import load_model
 
-MODEL_PATH = "model/stock_predictor.pkl"
+MODEL_PATH = "model/advanced_ensemble_model.pkl"  # Default to advanced model
 
 class StockPredictor:
-    """Unified predictor for all model types"""
+    """Unified predictor for all model types including advanced models"""
     
     def __init__(self, model_path=MODEL_PATH):
         self.model_path = model_path
@@ -19,6 +19,31 @@ class StockPredictor:
         self.model_type = None
         self.feature_cols = None
         self.lstm_model = None
+        self.scaler = None
+        self.use_scaling = False
+        
+    def create_lagged_features(self, df, feature_cols, lags=[1, 2, 3]):
+        """Create lagged features for advanced models"""
+        df_lagged = df.copy()
+        
+        for col in feature_cols:
+            if col in df.columns and col not in ['Target', 'Open', 'High', 'Low', 'Close', 'Volume']:
+                for lag in lags:
+                    df_lagged[f'{col}_lag_{lag}'] = df[col].shift(lag)
+        
+        return df_lagged
+    
+    def create_rolling_features(self, df, feature_cols, windows=[3, 5]):
+        """Create rolling statistics features for advanced models"""
+        df_rolling = df.copy()
+        
+        for col in feature_cols:
+            if col in df.columns and col not in ['Target', 'Open', 'High', 'Low', 'Close', 'Volume']:
+                for window in windows:
+                    df_rolling[f'{col}_rolling_mean_{window}'] = df[col].rolling(window).mean()
+                    df_rolling[f'{col}_rolling_std_{window}'] = df[col].rolling(window).std()
+        
+        return df_rolling
         
     def load_models(self):
         """Load trained model(s)"""
@@ -29,6 +54,12 @@ class StockPredictor:
         self.model_type = self.model_data['model_type']
         self.feature_cols = self.model_data['feature_cols']
         
+        # Check if model has scaler (advanced models)
+        if 'scaler' in self.model_data and self.model_data['scaler'] is not None:
+            self.scaler = self.model_data['scaler']
+            self.use_scaling = self.model_data.get('use_scaling', False)
+            print(f"Loaded model with scaling enabled")
+        
         if self.model_type == 'lstm':
             lstm_path = self.model_data['lstm_path']
             self.lstm_model = load_model(lstm_path)
@@ -37,9 +68,9 @@ class StockPredictor:
             self.model = self.model_data['model']
             print(f"Loaded {self.model_type} model")
     
-    def fetch_latest_data(self, ticker, days=250):
-        """Fetch recent stock data"""
-        df = yf.download(ticker, period=f"{days}d", interval="1d")
+    def fetch_latest_data(self, ticker, days=300):
+        """Fetch recent stock data (need more days for lagged features)"""
+        df = yf.download(ticker, period=f"{days}d", interval="1d", progress=False)
         df.dropna(inplace=True)
         
         if isinstance(df.columns, pd.MultiIndex):
@@ -47,10 +78,28 @@ class StockPredictor:
         
         return df
     
-    def prepare_features(self, df):
+    def prepare_features(self, df, is_advanced_model=False):
         """Engineer features for prediction"""
         engineer = FeatureEngineer()
         df_features = engineer.engineer_features(df)
+        
+        # If this is an advanced model, create lagged and rolling features
+        if is_advanced_model:
+            print("Creating advanced features (lagged and rolling)...")
+            
+            # Get base feature columns (exclude OHLCV and Target)
+            base_features = [col for col in df_features.columns 
+                           if col not in ['Target', 'Open', 'High', 'Low', 'Close', 'Volume']]
+            
+            # Create lagged features
+            df_features = self.create_lagged_features(df_features, base_features, lags=[1, 2, 3])
+            
+            # Create rolling features
+            df_features = self.create_rolling_features(df_features, base_features, windows=[3, 5])
+            
+            # Drop NaN values created by lagging and rolling
+            df_features.dropna(inplace=True)
+        
         return df_features
     
     def predict_single(self, features):
@@ -101,18 +150,43 @@ class StockPredictor:
         print(f"Fetching data for {ticker}...")
         df = self.fetch_latest_data(ticker)
         
-        print("Engineering features...")
-        df_features = self.prepare_features(df)
-        
         print("Loading model...")
         self.load_models()
+        
+        # Check if this is an advanced model by looking at feature names
+        is_advanced = any('_lag_' in col or '_rolling_' in col for col in self.feature_cols)
+        
+        if is_advanced:
+            print("Detected advanced model (with lagged/rolling features)")
+        
+        print("Engineering features...")
+        df_features = self.prepare_features(df, is_advanced_model=is_advanced)
+        
+        # Check if we have all required features
+        missing_features = set(self.feature_cols) - set(df_features.columns)
+        if missing_features:
+            print(f"\n⚠️  Warning: Missing {len(missing_features)} features")
+            print(f"This might happen if the model was trained with different feature settings")
+            raise ValueError(f"Missing required features. Please retrain the model or use a compatible model.")
+        
+        # Select only the features the model needs, in the correct order
+        features_df = df_features[self.feature_cols]
+        
+        # Apply scaling if the model was trained with scaling
+        if self.use_scaling and self.scaler is not None:
+            print("Applying feature scaling...")
+            features_df = pd.DataFrame(
+                self.scaler.transform(features_df),
+                columns=features_df.columns,
+                index=features_df.index
+            )
         
         # Get latest features
         if self.model_type == 'lstm':
             # Use last 10 rows for LSTM
-            latest_features = df_features[self.feature_cols][-10:]
+            latest_features = features_df[-10:]
         else:
-            latest_features = df_features[self.feature_cols].iloc[-1:].values
+            latest_features = features_df.iloc[-1:].values
         
         # Make prediction
         prediction, confidence, individual_preds = self.predict_single(latest_features)
@@ -160,18 +234,29 @@ class StockPredictor:
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python predict.py <TICKER>")
-        print("Example: python predict.py AAPL")
+    if len(sys.argv) < 2:
+        print("Usage: python predict.py <TICKER> [MODEL_PATH]")
+        print("\nExamples:")
+        print("  python predict.py AAPL")
+        print("  python predict.py AAPL model/advanced_ensemble_model.pkl")
+        print("  python predict.py TSLA model/multi_stock_predictor.pkl")
         sys.exit(1)
     
     ticker = sys.argv[1].upper()
     
+    # Allow custom model path as second argument
+    if len(sys.argv) > 2:
+        model_path = sys.argv[2]
+    else:
+        model_path = MODEL_PATH
+    
     try:
-        predictor = StockPredictor()
+        predictor = StockPredictor(model_path)
         predictor.predict(ticker)
     except Exception as e:
         print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 
