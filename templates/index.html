@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Trend Predictor - AI-Powered Stock Analysis</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+        animation: fadeInDown 0.6s ease;
+      }
+
+      h1 {
+        font-size: 3em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .subtitle {
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
+
+      .main-card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: fadeInUp 0.6s ease;
+      }
+
+      .input-section {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        min-width: 200px;
+        padding: 15px 20px;
+        font-size: 1.1em;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        transition: all 0.3s;
+      }
+
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+
+      input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      button {
+        padding: 15px 40px;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 30px;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .results {
+        display: none;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .result-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      .ticker-info h2 {
+        font-size: 2em;
+        color: #333;
+      }
+
+      .ticker-info .price {
+        font-size: 1.5em;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .prediction-box {
+        text-align: center;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 20px 0;
+        font-size: 1.3em;
+      }
+
+      .prediction-up {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+      }
+
+      .prediction-down {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        color: white;
+      }
+
+      .prediction-icon {
+        font-size: 3em;
+        margin-bottom: 10px;
+      }
+
+      .confidence-bar {
+        background: #e0e0e0;
+        height: 30px;
+        border-radius: 15px;
+        overflow: hidden;
+        margin: 15px 0;
+      }
+
+      .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.5s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+
+      .sentiment-box {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin: 20px 0;
+        border-left: 5px solid #667eea;
+      }
+
+      .sentiment-positive {
+        border-left-color: #38ef7d;
+      }
+
+      .sentiment-negative {
+        border-left-color: #f45c43;
+      }
+
+      .sentiment-neutral {
+        border-left-color: #ffd93d;
+      }
+
+      .indicators-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .indicator-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border: 2px solid #e0e0e0;
+      }
+
+      .indicator-label {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .indicator-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .indicator-signal {
+        font-size: 0.9em;
+        padding: 5px 10px;
+        border-radius: 20px;
+        display: inline-block;
+      }
+
+      .signal-bullish {
+        background: #d4f4dd;
+        color: #1e7e34;
+      }
+
+      .signal-bearish {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .signal-neutral {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .agreement-message {
+        padding: 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+        font-size: 1.1em;
+      }
+
+      .agreement-high {
+        background: #d4f4dd;
+        border-left: 5px solid #38ef7d;
+        color: #1e7e34;
+      }
+
+      .agreement-moderate {
+        background: #fff3cd;
+        border-left: 5px solid #ffd93d;
+        color: #856404;
+      }
+
+      .agreement-low {
+        background: #f8d7da;
+        border-left: 5px solid #f45c43;
+        color: #721c24;
+      }
+
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-left: 5px solid #f45c43;
+      }
+
+      .info-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: #e8eaf6;
+        border-radius: 10px;
+      }
+
+      .info-section h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      footer {
+        text-align: center;
+        color: white;
+        margin-top: 40px;
+        opacity: 0.8;
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2em;
+        }
+
+        .main-card {
+          padding: 20px;
+        }
+
+        .input-section {
+          flex-direction: column;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📈 Stock Trend Predictor</h1>
+        <p class="subtitle">
+          AI-Powered Stock Market Analysis with News Sentiment
+        </p>
+      </header>
+
+      <div class="main-card">
+        <div class="input-section">
+          <input
+            type="text"
+            id="tickerInput"
+            placeholder="Enter stock ticker (e.g., AAPL, TSLA, GOOGL)"
+            maxlength="5"
+          />
+          <div class="checkbox-container">
+            <input type="checkbox" id="sentimentCheck" checked />
+            <label for="sentimentCheck">Include News Sentiment</label>
+          </div>
+          <button onclick="predict()" id="predictBtn">Predict</button>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Analyzing stock data and news sentiment...</p>
+        </div>
+
+        <div class="error" id="error" style="display: none"></div>
+
+        <div class="results" id="results"></div>
+
+        <div class="info-section">
+          <h3>ℹ️ How It Works</h3>
+          <ul style="line-height: 2">
+            <li>
+              <strong>Technical Analysis:</strong> Uses machine learning to
+              analyze 40+ technical indicators (RSI, MACD, Bollinger Bands,
+              etc.)
+            </li>
+            <li>
+              <strong>News Sentiment:</strong> Analyzes recent news articles to
+              gauge market sentiment
+            </li>
+            <li>
+              <strong>Combined Prediction:</strong> Integrates both technical
+              and fundamental analysis for better accuracy
+            </li>
+          </ul>
+          <p style="margin-top: 15px; color: #721c24; font-weight: bold">
+            ⚠️ Disclaimer: This is for educational purposes only. Not financial
+            advice.
+          </p>
+        </div>
+      </div>
+
+      <footer>
+        <p>
+          Stock Trend Predictor © 2025 | Built with Machine Learning & Flask
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      // Allow Enter key to trigger prediction
+      document
+        .getElementById("tickerInput")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            predict();
+          }
+        });
+
+      async function predict() {
+        const ticker = document
+          .getElementById("tickerInput")
+          .value.trim()
+          .toUpperCase();
+        const useSentiment = document.getElementById("sentimentCheck").checked;
+        const loadingDiv = document.getElementById("loading");
+        const resultsDiv = document.getElementById("results");
+        const errorDiv = document.getElementById("error");
+        const predictBtn = document.getElementById("predictBtn");
+
+        // Validation
+        if (!ticker) {
+          showError("Please enter a stock ticker");
+          return;
+        }
+
+        // Reset UI
+        errorDiv.style.display = "none";
+        resultsDiv.style.display = "none";
+        loadingDiv.style.display = "block";
+        predictBtn.disabled = true;
+
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ticker: ticker,
+              use_sentiment: useSentiment,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            displayResults(data);
+          } else {
+            showError(data.error);
+          }
+        } catch (error) {
+          showError(
+            "Network error. Please check your connection and try again."
+          );
+        } finally {
+          loadingDiv.style.display = "none";
+          predictBtn.disabled = false;
+        }
+      }
+
+      function displayResults(data) {
+        const resultsDiv = document.getElementById("results");
+        const direction = data.prediction.direction;
+        const isUp = direction === "UP";
+
+        let html = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="ticker-info">
+                            <h2>${data.ticker}</h2>
+                            <div class="price">$${data.last_close.toFixed(
+                              2
+                            )}</div>
+                            <small style="color: #999;">as of ${
+                              data.last_date
+                            }</small>
+                        </div>
+                    </div>
+
+                    <div class="prediction-box ${
+                      isUp ? "prediction-up" : "prediction-down"
+                    }">
+                        <div class="prediction-icon">${isUp ? "📈" : "📉"}</div>
+                        <div style="font-size: 1.5em; font-weight: bold;">
+                            PREDICTION: ${direction} Tomorrow
+                        </div>
+                        ${
+                          data.prediction.confidence
+                            ? `
+                        <div style="margin-top: 15px;">
+                            Model Confidence:
+                            <div class="confidence-bar" style="background: rgba(255,255,255,0.3);">
+                                <div class="confidence-fill" style="width: ${data.prediction.confidence}%; background: rgba(255,255,255,0.5);">
+                                    ${data.prediction.confidence}%
+                                </div>
+                            </div>
+                        </div>
+                        `
+                            : ""
+                        }
+                    </div>
+            `;
+
+        // Add individual model predictions for ensemble
+        if (data.prediction.individual_models) {
+          html += `
+                    <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 10px;">
+                        <strong>Individual Model Votes:</strong><br/>
+                        <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                `;
+          for (const [model, pred] of Object.entries(
+            data.prediction.individual_models
+          )) {
+            const icon = pred === "UP" ? "📈" : "📉";
+            html += `<span style="padding: 5px 15px; background: #f0f0f0; border-radius: 20px;">${icon} ${model}: ${pred}</span>`;
+          }
+          html += `</div></div>`;
+        }
+
+        // Add sentiment analysis
+        if (data.sentiment && data.sentiment.available) {
+          const sent = data.sentiment;
+          const sentimentClass =
+            sent.score > 0.1
+              ? "sentiment-positive"
+              : sent.score < -0.1
+              ? "sentiment-negative"
+              : "sentiment-neutral";
+
+          html += `
+                    <div class="sentiment-box ${sentimentClass}">
+                        <h3>📰 News Sentiment Analysis</h3>
+                        <div style="font-size: 1.3em; margin: 15px 0;">
+                            ${sent.icon} ${sent.label} (Score: ${
+            sent.score > 0 ? "+" : ""
+          }${sent.score})
+                        </div>
+                        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                            <div><strong>Trend:</strong> ${sent.trend}</div>
+                            <div><strong>Articles:</strong> ${
+                              sent.articles_count
+                            }</div>
+                        </div>
+
+                        ${
+                          sent.agreement
+                            ? `
+                        <div class="agreement-message agreement-${sent.agreement.confidence}">
+                            ${sent.agreement.message}
+                        </div>
+                        `
+                            : ""
+                        }
+                    </div>
+                `;
+        } else if (data.sentiment && !data.sentiment.available) {
+          html += `
+                    <div style="padding: 15px; background: #fff3cd; border-radius: 10px; margin: 15px 0;">
+                        ⚠️ ${data.sentiment.message}
+                    </div>
+                `;
+        }
+
+        // Add technical indicators
+        if (
+          data.technical_indicators &&
+          Object.keys(data.technical_indicators).length > 0
+        ) {
+          html += `
+                    <div class="result-card" style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 20px;">📊 Technical Indicators</h3>
+                        <div class="indicators-grid">
+                `;
+
+          for (const [name, indicator] of Object.entries(
+            data.technical_indicators
+          )) {
+            const signalClass =
+              indicator.signal.includes("Bullish") ||
+              indicator.signal === "Overbought"
+                ? "signal-bullish"
+                : indicator.signal.includes("Bearish") ||
+                  indicator.signal === "Oversold"
+                ? "signal-bearish"
+                : "signal-neutral";
+
+            html += `
+                        <div class="indicator-card">
+                            <div class="indicator-label">${name}</div>
+                            <div class="indicator-value">${indicator.value}</div>
+                            <span class="indicator-signal ${signalClass}">${indicator.signal}</span>
+                        </div>
+                    `;
+          }
+
+          html += `
+                        </div>
+                    </div>
+                `;
+        }
+
+        html += `</div>`;
+
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = "block";
+        resultsDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function showError(message) {
+        const errorDiv = document.getElementById("error");
+        errorDiv.textContent = "❌ " + message;
+        errorDiv.style.display = "block";
+      }
+    </script>
+  </body>
+</html>
