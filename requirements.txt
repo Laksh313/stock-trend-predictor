@@ -23,10 +23,13 @@ matplotlib>=3.7.0
 seaborn>=0.12.0
 plotly>=5.14.0
 
-# News & Sentiment Analysis (NEW)
+# News & Sentiment Analysis
 newsapi-python>=0.2.7
 vaderSentiment>=3.3.2
 requests>=2.31.0
+
+# Web Application (NEW)
+flask>=3.0.0
 
 # Optional: For FinBERT (better accuracy, but slower)
 # Uncomment if you want to use FinBERT instead of VADER
